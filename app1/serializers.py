@@ -22,9 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
         last_name = validated_data.get('last_name')
         mobileno = validated_data.get('mobileno')
         role = validated_data.get('role')
-        print('role ',role)
         password = validated_data.get('password')
-
         user = User(email=email, first_name=first_name, last_name=last_name,mobileno=mobileno,role=role)
         user.set_password(password)
         user.save()
@@ -43,6 +41,18 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ContactMessageSerializer(serializers.ModelSerializer):
+    sender = serializers.UUIDField()
+    sender_first_name = serializers.CharField(source='sender.first_name', read_only=True)
+    sender_email = serializers.EmailField(source='sender.email', read_only=True)
+    
     class Meta:
         model = ContactMessage
-        fields = '__all__'
+        fields = ['sender', 'message','created_at','sender_first_name','sender_email','id']
+
+    def create(self, validated_data):
+        sender_id = validated_data.pop('sender')
+        try:
+            sender = User.objects.get(uid=sender_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Sender user not found")
+        return ContactMessage.objects.create(sender=sender, **validated_data)

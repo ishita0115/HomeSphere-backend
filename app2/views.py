@@ -32,14 +32,14 @@ class ManageListingView(APIView):
             country = request.GET.get('country', None)
             city = request.GET.get('city', None)
             sale_type = request.GET.get('sale_type', None)
-            num_bedrooms = request.GET.get('num_bedrooms', None)
+            bedrooms = request.GET.get('bedrooms', None)
             home_type = request.GET.get('home_type', None)
             address = request.GET.get('address', None)
             min_price = request.GET.get('min_price', None)
             max_price = request.GET.get('max_price', None)
 
             # Get all properties if no search parameters are provided
-            if not any([country, city, sale_type, num_bedrooms, home_type, address, min_price, max_price]):
+            if not any([country, city, sale_type, bedrooms, home_type, address, min_price, max_price]):
                 properties = Listing.objects.all()
             else:
                 # Filter properties based on provided search parameters
@@ -54,8 +54,8 @@ class ManageListingView(APIView):
                 if sale_type:
                     properties = properties.filter(sale_type__icontains=sale_type)
 
-                if num_bedrooms:
-                    properties = properties.filter(num_bedrooms=num_bedrooms)
+                if bedrooms:
+                    properties = properties.filter(bedrooms=bedrooms)
 
                 if home_type:
                     properties = properties.filter(home_type__icontains=home_type)
@@ -159,8 +159,6 @@ class BookingListView(APIView):
 
     def post(self, request, format=None):
         try:
-      
-            # Create a new Booking object with the seller_listing set to the authenticated user
             serializer = BookingSerializer(data=request.data)
             if serializer.is_valid():
                 # Set the seller_listing field of the serializer to the authenticated user
@@ -182,10 +180,8 @@ class BookingListView(APIView):
 
 class MyBooking(APIView):
         permission_classes = [IsAuthenticated]
-        print("+++++++++++++++++")
         def get(self, request, uid):
             try:
-                print("nice ")
                 user_bookings = Booking.objects.filter(booked_by=uid)
                 listing_ids = []
                 for booking in user_bookings:
@@ -196,8 +192,34 @@ class MyBooking(APIView):
                 return Response({'data': serializer.data,"listing_data":listing_serializer.data})
             except Exception as e:
                 return Response({'error': str(e)}, status=500)
-            
+
+class sellerbookingmanage(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, format=None):
+        try:
+            user = request.user
+            print(user)
+            # listing_user_email = 
+
+            bookings = Booking.objects.filter(Listing__user__email=user)
+            print(bookings)
+            serializer = BookingSerializer(bookings, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            error_message = {'error': str(e)}
+            return Response(error_message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+    def post(self, request, pk, action, format=None):
+        booking = self.get_object(pk)
+        if action == 'accept':
+            booking.status = 'accepted'
+        elif action == 'reject':
+            booking.status = 'rejected'
+        else:
+            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        booking.save()
+        return Response({'message': f'Booking {action.capitalize()}ed'}, status=status.HTTP_200_OK)     
 
 class FavoriteAPIView(APIView):
     permission_classes = [IsAuthenticated] 
@@ -229,19 +251,7 @@ class listing_coordinates_api(APIView):
         try:
             listings = Listing.objects.all()
 
-            coordinates = [
-                {
-                    'latitude': listing.latitude,
-                    'longitude': listing.longitude,
-                    'address': listing.address,
-                    'city': listing.city,
-                    'country': listing.country,
-                    'image1': listing.image1.url if listing.image1 else None
-                } 
-                for listing in listings
-            ]
-
-            # Return the coordinates in the response
+            coordinates = [{'latitude': listing.latitude, 'longitude': listing.longitude,'address':listing.address,'city':listing.city,'country':listing.country,'image1':listing.image1} for listing in listings]
             return Response({'coordinates': coordinates}, status=200)
         except Exception as e:
             return Response({'error': str(e)}, status=500)

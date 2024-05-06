@@ -60,6 +60,10 @@ class Listing(AbstractModel):
     @property
     def get_profile_picture(self):
         return self.user.profilephoto
+    
+    @property 
+    def get_user_email(self):
+        return self.user.email
 
     def __str__(self):
         return self.title
@@ -80,3 +84,8 @@ class Booking(models.Model):
     which_date = models.DateField()
     booked_by = models.CharField(max_length=55,default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+    statusmanage = models.CharField(max_length=20, default='pending')
+
+    @property
+    def get_user_by_listing(self):
+        return self.Listing.get_user_email
