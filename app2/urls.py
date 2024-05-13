@@ -1,6 +1,6 @@
 # urls.py
 from django.urls import path
-from .views import ManageListingView,ListingDetailView,UserListingAPIView,BookingListView,MyBooking,FavoriteAPIView,myallfavview,listing_coordinates_api,sellerbookingmanage
+from .views import ListingFeedbackAPIView, ListingListView, ManageListingView,ListingDetailView, SubmitFeedbackAPIView,UserListingAPIView,BookingListView,MyBooking,FavoriteAPIView,myallfavview,listing_coordinates_api,sellerbookingmanage,fetchbookingstatus
 
 urlpatterns = [
  path('ManageListingView/', ManageListingView.as_view(), name='image_ManageListingView'), 
@@ -14,6 +14,12 @@ urlpatterns = [
  path('listing-coordinates/', listing_coordinates_api.as_view(), name='listing_coordinates_api'),
  path('bookings/<int:pk>/<str:action>/', sellerbookingmanage.as_view()),
  path('seller-bookings/', sellerbookingmanage.as_view()),
+ path('seller-bookings/<uuid:booking_id>/<str:action>/', sellerbookingmanage.as_view(), name='seller_booking_manage'),
+ path('bookings/<int:pk>/status/', fetchbookingstatus.as_view(), name='fetch-booking-status'),
+ path('submitfeedback/', SubmitFeedbackAPIView.as_view(), name='submit_feedback'),
+ path('listing/<int:listing_id>/rating/', SubmitFeedbackAPIView.as_view(), name='listing_rating'),
+ path('listingfeedback/<int:listing_id>/', ListingFeedbackAPIView.as_view(), name='listing_feedback'),
+ path('listinglist/', ListingListView.as_view(), name='property-list'),
 ]
 
 

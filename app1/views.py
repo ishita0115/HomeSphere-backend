@@ -17,6 +17,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from app1.renderers import UserRenderer
+from django.core.mail import send_mail
 # Create your views here.
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -28,13 +29,13 @@ def get_tokens_for_user(user):
     
 class registerview(APIView):
     renderer_classes=[UserRenderer]
+
     def post(self, request, format=None):
         serializer = UserSerializer(data=request.data)
-        # print(serializer)
         if serializer.is_valid():
             user = serializer.save()
             token=get_tokens_for_user(user)
-            return Response({'token': token,'success':True,'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+            return Response({'token': token,'success':True}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -54,7 +55,7 @@ class UserLoginView(APIView):
               userdata = UserSerializer(queryset)
               return Response({'token':token,'success':True,'msg' : 'Login success','user': userdata.data},status=status.HTTP_200_OK)
             else:
-             return Response({'errors' : {'non_field_errors':['Email or Password is not Valid']},'success':False},status=status.HTTP_400_BAD_REQUEST)
+              return Response({'errors' : {'email':['Email or Password is not correct match']},'success':False},status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 class UserDetailView(APIView):
@@ -196,3 +197,28 @@ class ContactMessageSendAPIView(APIView):
             return Response(serializer.data)
         except ContactMessage.DoesNotExist:
             return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+class ForgotPasswordAPIView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'success': False, 'message': 'Email not found in our records.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Generate a unique password reset token here
+        # For simplicity, I'll assume a token generation method called 'generate_password_reset_token'
+        # Replace this with your actual token generation method
+        token = get_tokens_for_user(user)
+
+        # Now, you can send the token via email
+        send_mail(
+            'Password Reset',
+            f'Use this token to reset your password: {token}',
+            'from@example.com',
+            [email],
+            fail_silently=False,
+        )
+
+        return Response({'success': True, 'message': 'Password reset token sent to your email.'}, status=status.HTTP_200_OK)

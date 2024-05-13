@@ -1,19 +1,14 @@
 
-# class ImageUploadView(APIView):
-#     def post(self, request, format=None):
-#         serializer = ImageSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from http.client import NOT_FOUND
+from django.forms import IntegerField
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Listing,Booking
+from .models import Listing,Booking,Feedback
 from app1.models import User
-from .serializers import ListingSerializer,BookingSerializer
+from .serializers import FeedbackSerializer, ListingSerializer,BookingSerializer
 from app1.serializers import UserSerializer
 from .permissions import IsSellerUser, IsAdminUser
 
@@ -80,13 +75,11 @@ class ManageListingView(APIView):
     def post(self, request, *args, **kwargs):   
         try:
             authenticated_user = request.user
-            user_pk = authenticated_user.pk  # Get the user's primary key
-
-            # Fetch the user instance corresponding to the user_pk
+            user_pk = authenticated_user.pk 
             try:
                 user_instance = User.objects.get(pk=user_pk)
             except User.DoesNotExist:
-                raise NotFound("User not found")
+                raise NOT_FOUND("User not found")
 
             serializer = ListingSerializer(data=request.data)
             
@@ -97,7 +90,7 @@ class ManageListingView(APIView):
                 return Response({'success': True, 'data': serializer.data}, status=status.HTTP_201_CREATED)
             else:
                 return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        except AuthenticationFailed as e:
+        except AuthenticationFailed as e: # type: ignore
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -198,28 +191,49 @@ class sellerbookingmanage(APIView):
     def get(self, request, format=None):
         try:
             user = request.user
-            print(user)
-            # listing_user_email = 
-
-            bookings = Booking.objects.filter(Listing__user__email=user)
-            print(bookings)
-            serializer = BookingSerializer(bookings, many=True)
-            return Response(serializer.data)
+            bookings = Booking.objects.filter(Listing__user__email=user.email)
+            serializer = BookingSerializer(bookings, many=True, context={'request': request})
+            listing_ids = []
+            for booking in bookings:
+                listing_ids.append(booking.Listing.id)
+                listings = Listing.objects.filter(id__in=listing_ids)
+                listing_serializer = ListingSerializer(listings, many=True)
+            buyer_data = []
+            for booking in bookings:
+                buyer_id = booking.booked_by
+                buyer = User.objects.get(uid=buyer_id)
+                buyer_data.append({
+                    'buyer_id': buyer.uid,
+                    'buyer_fname': buyer.first_name,
+                    'buyer_email': buyer.email,
+                    'buyer_lname': buyer.last_name,
+                })
+            return Response({
+                'data': serializer.data,
+                "listing_data":listing_serializer.data,
+                'buyer_data': buyer_data,
+                
+            })
         except Exception as e:
             error_message = {'error': str(e)}
             return Response(error_message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    def post(self, request, pk, action, format=None):
-        booking = self.get_object(pk)
-        if action == 'accept':
-            booking.status = 'accepted'
-        elif action == 'reject':
-            booking.status = 'rejected'
-        else:
-            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        booking.save()
-        return Response({'message': f'Booking {action.capitalize()}ed'}, status=status.HTTP_200_OK)     
+    
+    def post(self, request, booking_id, action, format=None):
+        try:
+            booking = Booking.objects.get(pk=booking_id)
+            if action == 'accept':
+                booking.statusmanage = 'success'
+            elif action == 'reject':
+                message = request.data.get('message', '')
+                booking.statusmanage = message  # Set status to the rejection message
+                booking.reject_message = message
+            booking.save()
+            serializer = BookingSerializer(booking)
+            return Response(serializer.data)
+        except Booking.DoesNotExist:
+            return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
 
 class FavoriteAPIView(APIView):
     permission_classes = [IsAuthenticated] 
@@ -247,11 +261,86 @@ class myallfavview(APIView):
     
 
 class listing_coordinates_api(APIView):
-    def get(self,request):
+     def get(self, request):
         try:
             listings = Listing.objects.all()
-
-            coordinates = [{'latitude': listing.latitude, 'longitude': listing.longitude,'address':listing.address,'city':listing.city,'country':listing.country,'image1':listing.image1} for listing in listings]
+            coordinates = []
+            for listing in listings:
+                coordinate = {
+                    'latitude': listing.latitude,
+                    'longitude': listing.longitude,
+                    'address': listing.address,
+                    'city': listing.city,
+                    'country': listing.country,
+                    'image1_url': listing.image1.url if listing.image1 else None
+                }
+                coordinates.append(coordinate)
             return Response({'coordinates': coordinates}, status=200)
         except Exception as e:
             return Response({'error': str(e)}, status=500)
+
+class fetchbookingstatus(APIView):
+    def get(self, request, pk):
+        booking = Booking.objects.get(pk=pk)
+        serializer = BookingSerializer(booking)
+        return Response(serializer.data)
+    
+class SubmitFeedbackAPIView(APIView):
+    def post(self, request, format=None):
+        print(request.user)
+        authenticated_user_id = request.data['feedback_by']  # Access the value using dictionary key access
+        print(authenticated_user_id)
+        user_instance = User.objects.get(uid=authenticated_user_id)
+        print(user_instance)
+        serializer = FeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(feedback_by=user_instance)  # Make sure your serializer's field is named 'feedback_by'
+            print(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    def get(self, request, listing_id, format=None):
+        try:
+            # Assuming Rating model has a field named 'listing_id' to store the listing ID
+            ratings = Feedback.objects.filter(listing_id=listing_id).values_list('rating', flat=True)
+            ratings_list = list(ratings)
+            total_ratings = len(ratings_list)
+            if total_ratings > 0:
+                average_rating = sum(ratings_list) / total_ratings
+            else:
+                average_rating = 0
+            
+            return Response({'average_rating': average_rating}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class ListingFeedbackAPIView(APIView):
+    def get(self, request, listing_id):
+        try:
+            feedbacks = Feedback.objects.filter(listing_id=listing_id)
+            serializer = FeedbackSerializer(feedbacks, many=True)
+            return Response(serializer.data)
+        except Feedback.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+
+class ListingListView(APIView):
+    def post(self, request):
+        sort_by = request.data.get('sort_by')
+        listings = Listing.objects.all()
+        if sort_by:
+            if sort_by == 'price_asc':
+                listings = listings.order_by('price')
+            elif sort_by == 'price_desc':
+                listings = listings.order_by('-price')
+            elif sort_by == 'rating_asc':
+                listings = listings.order_by('rating')
+            elif sort_by == 'rating_desc':
+                listings = listings.order_by('-rating')
+            elif sort_by == 'bedrooms_asc':
+                listings = listings.order_by('bedrooms')
+
+        serializer = ListingSerializer(listings, many=True)
+        return Response(serializer.data)

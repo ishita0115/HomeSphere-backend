@@ -222,3 +222,10 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 #         'BACKEND': 'channels.layers.InMemoryChannelLayer'
 #     }
 # }
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587  # Corrected typo from EMAIL_POST to EMAIL_PORT
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'ishitachovatiya15@gmail.com'
+EMAIL_HOST_PASSWORD = 'bwjl ttly liva dfuo'

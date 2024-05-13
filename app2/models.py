@@ -84,8 +84,31 @@ class Booking(models.Model):
     which_date = models.DateField()
     booked_by = models.CharField(max_length=55,default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-    statusmanage = models.CharField(max_length=20, default='pending')
+    statusmanage = models.CharField(max_length=200, default='pending')
 
     @property
     def get_user_by_listing(self):
         return self.Listing.get_user_email
+    
+
+class Feedback(models.Model):
+    listing_id= models.ForeignKey(Listing, related_name='feedbacks', on_delete=models.CASCADE)
+    rating = models.IntegerField()
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    feedback_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'Feedback for Property ID: {self.property_id}'
+    
+    @property
+    def get_user_name(self):
+        return self.feedback_by.first_name
+    
+    @property
+    def get_user_name(self):
+        return self.feedback_by.last_name
+    
+    @property
+    def get_profile_picture(self):
+        return self.feedback_by.profilephoto

@@ -1,4 +1,4 @@
-from .views import registerview,UserLoginView,UserDetailView,UserProfileView,ContactMessageList,ContactMessageSendAPIView
+from .views import ForgotPasswordAPIView, registerview,UserLoginView,UserDetailView,UserProfileView,ContactMessageList,ContactMessageSendAPIView
 from django.urls import path
 
 # from dj_rest_auth.jwt_auth import get_refresh_view
@@ -15,4 +15,5 @@ urlpatterns = [
     path('contact/', ContactMessageList.as_view(), name='create_contact_message'),
     path('contact/<int:pk>/', ContactMessageList.as_view(), name='contact-message-delete'),
     path('contact/<int:pk>/send/', ContactMessageSendAPIView.as_view(), name='contact-message-send'),
+    path('forgot-password/', ForgotPasswordAPIView.as_view(), name='forgot-password'),
 ]
