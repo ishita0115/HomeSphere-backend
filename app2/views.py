@@ -14,16 +14,8 @@ from .permissions import IsSellerUser, IsAdminUser
 
 class ManageListingView(APIView):
     permission_classes = [IsAuthenticated]
-    # parser_classes=[IsAdminUser]
     def get(self, request,*args, **kwargs):
-        # try:
-        #     listings = Listing.objects.all()
-        #     serializer = ListingSerializer(listings, many=True)
-        #     return Response({'data': serializer.data},status=status.HTTP_200_OK)
-        # except Exception as e:
-        #     return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         try:
-            # Extract search parameters from the request query parameters
             country = request.GET.get('country', None)
             city = request.GET.get('city', None)
             sale_type = request.GET.get('sale_type', None)
@@ -94,7 +86,7 @@ class ManageListingView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+ 
     def put(self, request, pk, format=None):
         try:
             listing = Listing.objects.get(pk=pk)
@@ -142,6 +134,16 @@ class UserListingAPIView(APIView):
     def get(self, request, user_id):
         try:
             listings = Listing.objects.filter(user_id=user_id)
+            serializer = ListingSerializer(listings, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class myListingAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request ,uid ):
+        try:
+            listings = Listing.objects.filter(user__uid=uid)
             serializer = ListingSerializer(listings, many=True)
             return Response(serializer.data)
         except Exception as e:

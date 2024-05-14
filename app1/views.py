@@ -8,7 +8,9 @@ import cloudinary.uploader
 import cloudinary.api
 from cloudinary import CloudinaryImage
 from cloudinary import CloudinaryVideo
-from .serializers import UserSerializer,UserLoginSerializer,ContactMessageSerializer
+
+from app1.permissions import IsAdminUser
+from .serializers import SendPasswordResetEmailSerializer, UserChangePasswordSerializer, UserPasswordResetSerializer, UserSerializer,UserLoginSerializer,ContactMessageSerializer
 from .models import User,ContactMessage
 from django.contrib.auth import authenticate
 from rest_framework.views import APIView
@@ -100,46 +102,6 @@ class UserProfileView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-# class UserGoogleLogin(APIView):
-#     def post(self, request):
-#         # Retrieve user data from the request
-#         first_name = request.data.get('first_name')
-#         last_name = request.data.get("last_name")
-#         email = request.data.get('email')
-#         profilephoto_url = request.data.get('profilephoto')
-
-#         # Check if 'name' (first_name) is provided
-#         if not first_name:
-#             return Response({'error': 'First name is missing in the request'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             # Check if the user exists
-#             user = User.objects.get(email=email)
-#         except User.DoesNotExist:
-#             # If the user does not exist, create a new user
-#             user = User.objects.create_user(email=email, first_name=first_name,last_name=last_name)
-        
-#         # Update user profile information including the profile photo
-#         user.first_name = first_name
-#         user.profilephoto = profilephoto_url
-#         user.save()
-
-#         # Generate JWT token
-#         refresh = RefreshToken.for_user(user)
-#         access_token = str(refresh.access_token)
-        
-#         # Return user data and token
-#         return Response({
-#             'user': {
-#                 'id': user.id,
-#                 'first_name': user.first_name,
-#                 'last_name':user.last_name,
-#                 'email': user.email,
-#                 'profilephoto': user.profilephoto
-#             },
-#             'token': access_token
-#         }, status=status.HTTP_200_OK)
-
 class ContactMessageList(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
@@ -197,28 +159,33 @@ class ContactMessageSendAPIView(APIView):
             return Response(serializer.data)
         except ContactMessage.DoesNotExist:
             return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-class ForgotPasswordAPIView(APIView):
-    def post(self, request):
-        email = request.data.get('email')
-        
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({'success': False, 'message': 'Email not found in our records.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Generate a unique password reset token here
-        # For simplicity, I'll assume a token generation method called 'generate_password_reset_token'
-        # Replace this with your actual token generation method
-        token = get_tokens_for_user(user)
 
-        # Now, you can send the token via email
-        send_mail(
-            'Password Reset',
-            f'Use this token to reset your password: {token}',
-            'from@example.com',
-            [email],
-            fail_silently=False,
-        )
+class UserChangePasswordView(APIView):
+  renderer_classes = [UserRenderer]
+  permission_classes = [IsAuthenticated]
+  def post(self, request, format=None):
+    serializer = UserChangePasswordSerializer(data=request.data, context={'user':request.user})
+    serializer.is_valid(raise_exception=True)
+    return Response({'msg':'Password Changed Successfully'}, status=status.HTTP_200_OK)
 
-        return Response({'success': True, 'message': 'Password reset token sent to your email.'}, status=status.HTTP_200_OK)
+class SendPasswordResetEmailView(APIView):
+  renderer_classes = [UserRenderer]
+  def post(self, request, format=None):
+    serializer = SendPasswordResetEmailSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    return Response({'msg':'Password Reset link send. Please check your Email'}, status=status.HTTP_200_OK)
+
+class UserPasswordResetView(APIView):
+  renderer_classes = [UserRenderer]
+  def post(self, request, uid, token, format=None):
+    serializer = UserPasswordResetSerializer(data=request.data, context={'uid':uid, 'token':token})
+    serializer.is_valid(raise_exception=True)
+    return Response({'msg':'Password Reset Successfully'}, status=status.HTTP_200_OK)
+  
+
+class UserListView(APIView):
+    permission_classes = [IsAdminUser]
+    def get(self, request, format=None):
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
