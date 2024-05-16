@@ -1,9 +1,7 @@
 
-from distutils.command import upload
 from http.client import NOT_FOUND
 from django.forms import IntegerField
 from django.shortcuts import get_object_or_404
-import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,7 +11,7 @@ from app1.models import User
 from .serializers import FeedbackSerializer, ListingSerializer,BookingSerializer, Listingupdateserializer
 from app1.serializers import UserSerializer
 from .permissions import IsSellerUser, IsAdminUser
-from django.core.files.base import ContentFile
+
 
 
 class ManageListingView(APIView):
@@ -94,45 +92,10 @@ class ManageListingView(APIView):
     def put(self, request, pk, format=None):
         try:
             listing = Listing.objects.get(pk=pk)
-            print(listing)
-            print(request.data)
-
             if request.user != listing.user:
                 return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
             data = request.data.copy()
-            print(data)
-
-            # Check and retain existing images if not provided in the request
-            for img_field in ['image1', 'image2', 'image3', 'image4']:
-                if img_field in data and data[img_field].startswith('http'):
-                    print(img_field)
-                    img_url = data[img_field]
-                    print(img_url)
-                    response = requests.get(img_url)
-                    print(response)
-                    if response.status_code == 200:
-                        print("responsecdddfffffffff")
-                        file_name = img_url.split('/')[-1]
-                        response_file = ContentFile(response.content, name=file_name)
-                        print(response_file)
-                        upload_result = upload(response_file)
-                        print(upload_result)
-                        cloudinary_url = upload_result.get('url')
-                        data[img_field] = cloudinary_url
-                    else:
-                        return Response({'error': f'Unable to download image from {img_url}'}, status=status.HTTP_400_BAD_REQUEST)
-                elif img_field not in data:
-                    data[img_field] = getattr(listing, img_field)
-            # Ensure favorited field is handled correctly
-            if 'favorited' in data:
-                favorited_value = data.get('favorited')
-                if favorited_value:
-                    data['favorited'] = int(favorited_value)
-                else:
-                    data['favorited'] = None
-
-            serializer = ListingSerializer(listing, data=data, partial=True)
+            serializer = Listingupdateserializer(listing, data=data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -153,7 +116,39 @@ class ManageListingView(APIView):
             return Response({'error': 'Listing does not exist'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class ListingDelete(APIView):
+    permission_classes = [IsAuthenticated]
+    def delete(self, request, pk, format=None):
+        try:
+            listing = Listing.objects.get(pk=pk)
+            if request.user != listing.user:
+                return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            listing.is_deleted = True  # Set is_deleted field to True instead of calling delete()
+            listing.save()  # Save the changes to the database
+            return Response({'success': 'Listing marked as deleted'}, status=status.HTTP_204_NO_CONTENT)
+        except Listing.DoesNotExist:
+            return Response({'error': 'Listing does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    def get(self, request,uid,format=None):
+        try:
+            print(uid)
+            uids = request.user.id
+            print('uidsssd',uids)
 
+            # Filter listings by user's uid and is_deleted=True
+            deleted_listings = Listing.objects.filter(user=uids).filter(is_deleted=True)
+            print('deldeted list',deleted_listings)
+            # Serialize the queryset
+            serialized_listings = ListingSerializer(deleted_listings, many=True)
+            # Return serialized data in the response
+            return Response({'deleted_listings': serialized_listings.data})
+        except Exception as e:
+            # Log any errors for debugging purposes
+            print(f"Error fetching deleted listings: {e}")
+            return Response({'error': 'An error occurred while fetching deleted listings'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class ListingDetailView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, pk, format=None):  # Changed the method signature to accept pk
@@ -212,7 +207,8 @@ class BookingListView(APIView):
         except Exception as e:
             error_message = {'error': str(e)}
             return Response(error_message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
+
     def delete(self, request, uid):
         booking = get_object_or_404(Booking, id=uid)
         if(booking):

@@ -2,6 +2,8 @@ from django.db import models
 from django.utils.timezone import now
 from app1.models import User
 import uuid
+
+# this one are common field
 class AbstractModel(models.Model):
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(default=now)
@@ -11,7 +13,7 @@ class AbstractModel(models.Model):
 
 class ListingManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(is_deleted=False)
+        return super().get_queryset()
     
 class Listing(AbstractModel):
     objects = ListingManager()
@@ -52,7 +54,6 @@ class Listing(AbstractModel):
     image3 = models.ImageField(upload_to='images')
     image4 = models.ImageField(upload_to='images')
     latitude = models.FloatField(default=0)
-    # images = models.ArrayField(models.URLField(upload_to='images'), blank=True, null=True, validators=[MaxValueValidator(8)])
     longitude = models.FloatField(default=0)
 
     @property

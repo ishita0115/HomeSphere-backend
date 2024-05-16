@@ -12,10 +12,9 @@ class ListingSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class Listingupdateserializer(serializers.ModelSerializer):
-    image1 = serializers.ImageField(max_length=None, use_url=True)
     class Meta:
         model = Listing
-        fields = ["image1",'title','address','city','country','description','extrafacility','rental_choice','price','bedrooms','bathrooms','sale_type','home_type','latitude','longitude']
+        fields = ['title','address','city','country','description','extrafacility','rental_choice','price','bedrooms','bathrooms','sale_type','home_type','latitude','longitude']
         
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
