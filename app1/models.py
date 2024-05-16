@@ -51,6 +51,7 @@ class ContactMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=200, default='pending')
 
     def __str__(self):
         return f"Message from {self.sender.email} at {self.created_at}"

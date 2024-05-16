@@ -44,8 +44,6 @@ class registerview(APIView):
 class UserLoginView(APIView):
     renderer_classes=[UserRenderer]
     def post(self,request,format=None):
-        print(request)
-        # serializer = UserLoginSerializer(data=request.data)
         serializer = UserLoginSerializer(data=request.data, partial=True)
         if serializer.is_valid():
             email = serializer.data.get('email')
@@ -78,7 +76,6 @@ class UserDetailView(APIView):
             serializer = UserSerializer(user, data=request.data, partial=True)
             print(request.data)
             if serializer.is_valid():
-                # Save the changes to the user object
                 serializer.save()
                 print(serializer.data)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -108,7 +105,6 @@ class ContactMessageList(APIView):
         admin = User.objects.filter(role=User.ADMIN).first()  # Assuming there's only one admin
         if not admin:
             return Response({"error": "No admin found"}, status=status.HTTP_404_NOT_FOUND)
-
         sender_id = request.data.get('sender')
         print(sender_id)
         serializer = ContactMessageSerializer(data=request.data, context={'sender_id': sender_id, 'recipient': admin})
@@ -159,7 +155,15 @@ class ContactMessageSendAPIView(APIView):
             return Response(serializer.data)
         except ContactMessage.DoesNotExist:
             return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+    def get(self, request, message_id):
+        try:
+            message = ContactMessage.objects.get(id=message_id)
+            return Response({'status': message.status})
+        except ContactMessage.DoesNotExist:
+            return Response({'error': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)
+        
 
+        
 class UserChangePasswordView(APIView):
   renderer_classes = [UserRenderer]
   permission_classes = [IsAuthenticated]

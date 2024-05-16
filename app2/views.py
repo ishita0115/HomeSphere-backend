@@ -1,16 +1,20 @@
 
+from distutils.command import upload
 from http.client import NOT_FOUND
 from django.forms import IntegerField
 from django.shortcuts import get_object_or_404
+import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import Listing,Booking,Feedback
 from app1.models import User
-from .serializers import FeedbackSerializer, ListingSerializer,BookingSerializer
+from .serializers import FeedbackSerializer, ListingSerializer,BookingSerializer, Listingupdateserializer
 from app1.serializers import UserSerializer
 from .permissions import IsSellerUser, IsAdminUser
+from django.core.files.base import ContentFile
+
 
 class ManageListingView(APIView):
     permission_classes = [IsAuthenticated]
@@ -90,9 +94,45 @@ class ManageListingView(APIView):
     def put(self, request, pk, format=None):
         try:
             listing = Listing.objects.get(pk=pk)
+            print(listing)
+            print(request.data)
+
             if request.user != listing.user:
                 return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-            serializer = ListingSerializer(listing, data=request.data)
+
+            data = request.data.copy()
+            print(data)
+
+            # Check and retain existing images if not provided in the request
+            for img_field in ['image1', 'image2', 'image3', 'image4']:
+                if img_field in data and data[img_field].startswith('http'):
+                    print(img_field)
+                    img_url = data[img_field]
+                    print(img_url)
+                    response = requests.get(img_url)
+                    print(response)
+                    if response.status_code == 200:
+                        print("responsecdddfffffffff")
+                        file_name = img_url.split('/')[-1]
+                        response_file = ContentFile(response.content, name=file_name)
+                        print(response_file)
+                        upload_result = upload(response_file)
+                        print(upload_result)
+                        cloudinary_url = upload_result.get('url')
+                        data[img_field] = cloudinary_url
+                    else:
+                        return Response({'error': f'Unable to download image from {img_url}'}, status=status.HTTP_400_BAD_REQUEST)
+                elif img_field not in data:
+                    data[img_field] = getattr(listing, img_field)
+            # Ensure favorited field is handled correctly
+            if 'favorited' in data:
+                favorited_value = data.get('favorited')
+                if favorited_value:
+                    data['favorited'] = int(favorited_value)
+                else:
+                    data['favorited'] = None
+
+            serializer = ListingSerializer(listing, data=data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -161,6 +201,14 @@ class BookingListView(APIView):
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            error_message = {'error': str(e)}
+            return Response(error_message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def get(self, request, format=None):
+        try:
+            bookings = Booking.objects.all()
+            serializer = BookingSerializer(bookings, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = {'error': str(e)}
             return Response(error_message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -263,6 +311,8 @@ class myallfavview(APIView):
     
 
 class listing_coordinates_api(APIView):
+     permission_classes = [IsAuthenticated]
+
      def get(self, request):
         try:
             listings = Listing.objects.all()

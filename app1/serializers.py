@@ -51,7 +51,7 @@ class ContactMessageSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ContactMessage
-        fields = ['sender', 'message','created_at','sender_first_name','sender_email','id']
+        fields = ['sender', 'message','created_at','sender_first_name','sender_email','id','status']
 
     def create(self, validated_data):
         sender_id = validated_data.pop('sender')

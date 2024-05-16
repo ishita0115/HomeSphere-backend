@@ -6,11 +6,16 @@ from .models import Listing,Booking,Feedback
 class ListingSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.first_name',read_only=True)
     profilephoto = serializers.CharField(source='user.profilephoto',read_only=True)
+
     class Meta:
         model = Listing
         fields = '__all__'
 
-
+class Listingupdateserializer(serializers.ModelSerializer):
+    image1 = serializers.ImageField(max_length=None, use_url=True)
+    class Meta:
+        model = Listing
+        fields = ["image1",'title','address','city','country','description','extrafacility','rental_choice','price','bedrooms','bathrooms','sale_type','home_type','latitude','longitude']
         
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:

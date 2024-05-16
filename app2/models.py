@@ -52,6 +52,7 @@ class Listing(AbstractModel):
     image3 = models.ImageField(upload_to='images')
     image4 = models.ImageField(upload_to='images')
     latitude = models.FloatField(default=0)
+    # images = models.ArrayField(models.URLField(upload_to='images'), blank=True, null=True, validators=[MaxValueValidator(8)])
     longitude = models.FloatField(default=0)
 
     @property
