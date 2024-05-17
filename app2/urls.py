@@ -4,6 +4,7 @@ from .views import ListingDelete, ListingFeedbackAPIView, ListingListView, Manag
 
 urlpatterns = [
  path('ManageListingView/', ManageListingView.as_view(), name='image_ManageListingView'), 
+ path('HomePermenent/<int:pk>/delete/', ManageListingView.as_view(), name='listing-delete'),
  path('ManageListingupdatedeleteView/<int:pk>/', ManageListingView.as_view(), name='ManageListingupdatedeleteView'), 
  path('detailisting/<int:pk>/', ListingDetailView.as_view(), name='image_ListingDetailView'), 
  path('user-listings/<int:user_id>/', UserListingAPIView.as_view(), name='user_listings'),
