@@ -10,9 +10,10 @@ from .models import Listing,Booking,Feedback
 from app1.models import User
 from .serializers import FeedbackSerializer, ListingSerializer,BookingSerializer, Listingupdateserializer
 from app1.serializers import UserSerializer
-from .permissions import IsSellerUser, IsAdminUser
-
-
+from .permissions import  IsSellerUser, IsAdminUser
+from .permissions import IsBuyerUser 
+from django.db.models.functions import Coalesce
+from django.db.models import Avg, Value, FloatField
 
 class ManageListingView(APIView):
     permission_classes = [IsAuthenticated]
@@ -185,8 +186,7 @@ class myListingAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class BookingListView(APIView):
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [IsAuthenticated, IsBuyerUser]
     def post(self, request, format=None):
         try:
             serializer = BookingSerializer(data=request.data)
@@ -271,7 +271,7 @@ class sellerbookingmanage(APIView):
                 booking.statusmanage = 'success'
             elif action == 'reject':
                 message = request.data.get('message', '')
-                booking.statusmanage = message  # Set status to the rejection message
+                booking.statusmanage = message 
                 booking.reject_message = message
             booking.save()
             serializer = BookingSerializer(booking)
@@ -335,8 +335,7 @@ class fetchbookingstatus(APIView):
     
 class SubmitFeedbackAPIView(APIView):
     def post(self, request, format=None):
-        print(request.user)
-        authenticated_user_id = request.data['feedback_by']  # Access the value using dictionary key access
+        authenticated_user_id = request.data['feedback_by'] 
         print(authenticated_user_id)
         user_instance = User.objects.get(uid=authenticated_user_id)
         print(user_instance)
@@ -384,11 +383,17 @@ class ListingListView(APIView):
             elif sort_by == 'price_desc':
                 listings = listings.order_by('-price')
             elif sort_by == 'rating_asc':
-                listings = listings.order_by('rating')
+                listings = listings.annotate(avg_rating=Coalesce(Avg('feedbacks__rating'), 0, output_field=FloatField())).order_by('avg_rating')
             elif sort_by == 'rating_desc':
-                listings = listings.order_by('-rating')
+                listings = listings.annotate(avg_rating=Coalesce(Avg('feedbacks__rating'), 0, output_field=FloatField())).order_by('-avg_rating')
             elif sort_by == 'bedrooms_asc':
                 listings = listings.order_by('bedrooms')
 
         serializer = ListingSerializer(listings, many=True)
+        return Response(serializer.data)
+    
+class AllTrashHome(APIView):
+    def get(self,request):
+        trash_data = Listing.objects.filter(is_deleted=True)
+        serializer = ListingSerializer(trash_data, many=True)
         return Response(serializer.data)

@@ -1,15 +1,9 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
-
-# Create your models here.
-import uuid
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from .managers import CustomUserManager
+import uuid
 
-# Create your models here.
 class User(AbstractUser):
     username = None  
     ADMIN = 1  
@@ -24,7 +18,7 @@ class User(AbstractUser):
         verbose_name = 'user'
         verbose_name_plural = 'users'
 
-  # Roles created here
+ 
     mobileno = models.CharField(max_length=10, null=True, blank=True)
     uid = models.UUIDField(unique=True, editable=False, default=uuid.uuid4, verbose_name='Public identifier')
     email = models.EmailField(unique=True)
