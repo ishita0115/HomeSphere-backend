@@ -14,9 +14,11 @@ from .permissions import  IsSellerUser, IsAdminUser
 from .permissions import IsBuyerUser 
 from django.db.models.functions import Coalesce
 from django.db.models import Avg, Value, FloatField
+from rest_framework.pagination import LimitOffsetPagination
 
 class ManageListingView(APIView):
     permission_classes = [IsAuthenticated]
+    pagination_class = LimitOffsetPagination
     def get(self, request,*args, **kwargs):
         try:
             country = request.GET.get('country', None)
@@ -28,7 +30,7 @@ class ManageListingView(APIView):
             min_price = request.GET.get('min_price', None)
             max_price = request.GET.get('max_price', None)
 
-            # Get all properties if no search parameters are provided
+            
             if not any([country, city, sale_type, bedrooms, home_type, address, min_price, max_price]):
                 properties = Listing.objects.all()
             else:
@@ -58,11 +60,14 @@ class ManageListingView(APIView):
 
                 if max_price:
                     properties = properties.filter(price__lte=max_price)
+            paginator = self.pagination_class()
+            paginated_properties = paginator.paginate_queryset(properties, request)
+            erializer = ListingSerializer(paginated_properties, many=True)
 
             # Serialize the properties
             serializer = ListingSerializer(properties, many=True)
             
-            return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+            return paginator.get_paginated_response({'data': serializer.data})
         
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -186,7 +191,7 @@ class myListingAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class BookingListView(APIView):
-    permission_classes = [IsAuthenticated, IsBuyerUser]
+    permission_classes = [IsAuthenticated,IsBuyerUser]
     def post(self, request, format=None):
         try:
             serializer = BookingSerializer(data=request.data)
@@ -199,15 +204,7 @@ class BookingListView(APIView):
         except Exception as e:
             error_message = {'error': str(e)}
             return Response(error_message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    def get(self, request, format=None):
-        try:
-            bookings = Booking.objects.all()
-            serializer = BookingSerializer(bookings, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            error_message = {'error': str(e)}
-            return Response(error_message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        
 
     def delete(self, request, uid):
         booking = get_object_or_404(Booking, id=uid)
@@ -216,6 +213,17 @@ class BookingListView(APIView):
             Response({'message': 'successfully done booking .'}, status=status.HTTP_200_OK)
         return Response({'message': 'Booking deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
     
+class BookinggetView(APIView):
+    permission_classes=[IsAuthenticated]
+    def get(self, request, format=None):
+        try:
+            bookings = Booking.objects.all()
+            serializer = BookingSerializer(bookings, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            error_message = {'error': str(e)}
+            return Response(error_message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+   
 
 class MyBooking(APIView):
         permission_classes = [IsAuthenticated]
@@ -297,13 +305,23 @@ class FavoriteAPIView(APIView):
                 return Response({'is_favorite': True})
      
 class myallfavview(APIView):
+
     permission_classes = [IsAuthenticated]
+    pagination_class = LimitOffsetPagination  # Define pagination class
 
     def get(self, request, user_id, format=None):
         user = get_object_or_404(User, uid=user_id)
         favorite_listings = user.favorites.all()
-        serializer = ListingSerializer(favorite_listings, many=True)
-        return Response({'data': serializer.data},status=status.HTTP_200_OK)
+
+        # Paginate the queryset
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(favorite_listings, request)
+
+        # Serialize paginated queryset
+        serializer = ListingSerializer(paginated_queryset, many=True)
+        
+        # Return paginated response
+        return paginator.get_paginated_response({'data': serializer.data})
     
 
 class listing_coordinates_api(APIView):

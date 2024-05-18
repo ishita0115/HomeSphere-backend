@@ -1,6 +1,6 @@
 # urls.py
 from django.urls import path
-from .views import AllTrashHome, ListingDelete, ListingFeedbackAPIView, ListingListView, ManageListingView,ListingDetailView, SubmitFeedbackAPIView,UserListingAPIView,BookingListView,MyBooking,FavoriteAPIView,myallfavview,listing_coordinates_api,sellerbookingmanage,fetchbookingstatus,myListingAPIView
+from .views import AllTrashHome, BookinggetView, ListingDelete, ListingFeedbackAPIView, ListingListView, ManageListingView,ListingDetailView, SubmitFeedbackAPIView,UserListingAPIView,BookingListView,MyBooking,FavoriteAPIView,myallfavview,listing_coordinates_api,sellerbookingmanage,fetchbookingstatus,myListingAPIView
 
 urlpatterns = [
  path('ManageListingView/', ManageListingView.as_view(), name='image_ManageListingView'), 
@@ -10,6 +10,7 @@ urlpatterns = [
  path('user-listings/<int:user_id>/', UserListingAPIView.as_view(), name='user_listings'),
  path('mylistings/<str:uid>/', myListingAPIView.as_view(), name='mylistings'),
  path('bookings/', BookingListView.as_view(), name='booking-list'),
+ path('bookingsget/', BookinggetView.as_view()),
  path('mybooking/<str:uid>/', MyBooking.as_view(), name='mybooking'),
  path('bookingsdelete/<str:uid>/', BookingListView.as_view(), name='delete_booking'),
  path('favorite/<int:pk>/', FavoriteAPIView.as_view(), name='favorite'),

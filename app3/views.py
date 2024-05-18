@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Conversation, ConversationMessage
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.pagination import PageNumberPagination
 from .serializers import (
     ConversationListSerializer,
     ConversationDetailSerializer,

@@ -131,31 +131,31 @@ class ContactMessageList(APIView):
         except ContactMessage.DoesNotExist:
             return Response({'error': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)    
 
-# class ContactMessageSendAPIView(APIView):
-#     def post(self, request, pk):
-#         try:
-#             original_message = ContactMessage.objects.get(pk=pk)
-#             sender = original_message.sender
-#             reply_message = ContactMessage.objects.create(sender=sender, message=request.data['message'])
-#             reply_message.save()
-#             return Response(status=status.HTTP_201_CREATED)
-#         except ContactMessage.DoesNotExist:
-#             return Response({"error": "Original message not found"}, status=status.HTTP_404_NOT_FOUND)
-#     def put(self, request, pk):
-#         try:
-#             message = ContactMessage.objects.get(pk=pk)
-#             message.acknowledged = True
-#             message.save()
-#             serializer = ContactMessageSerializer(message)
-#             return Response(serializer.data)
-#         except ContactMessage.DoesNotExist:
-#             return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
-#     def get(self, request, message_id):
-#         try:
-#             message = ContactMessage.objects.get(id=message_id)
-#             return Response({'status': message.status})
-#         except ContactMessage.DoesNotExist:
-#             return Response({'error': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)
+class ContactMessageSendAPIView(APIView):
+    def post(self, request, pk):
+        try:
+            original_message = ContactMessage.objects.get(pk=pk)
+            sender = original_message.sender
+            reply_message = ContactMessage.objects.create(sender=sender, message=request.data['message'])
+            reply_message.save()
+            return Response(status=status.HTTP_201_CREATED)
+        except ContactMessage.DoesNotExist:
+            return Response({"error": "Original message not found"}, status=status.HTTP_404_NOT_FOUND)
+    # def put(self, request, pk):
+    #     try:
+    #         message = ContactMessage.objects.get(pk=pk)
+    #         message.acknowledged = True
+    #         message.save()
+    #         serializer = ContactMessageSerializer(message)
+    #         return Response(serializer.data)
+    #     except ContactMessage.DoesNotExist:
+    #         return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+    def get(self, request, message_id):
+        try:
+            message = ContactMessage.objects.get(id=message_id)
+            return Response({'status': message.status})
+        except ContactMessage.DoesNotExist:
+            return Response({'error': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)
     
 
         
