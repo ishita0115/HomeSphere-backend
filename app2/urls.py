@@ -26,7 +26,7 @@ urlpatterns = [
  path('listinglist/', ListingListView.as_view(), name='property-list'),
  path('listings/<int:pk>/delete/', ListingDelete.as_view(), name='listing-delete'),
  path('deleted-listingsfetch/<str:uid>/', ListingDelete.as_view()),
- path('AllTrashdata/',AllTrashHome.as_view())
+ path('AllTrashdata/',AllTrashHome.as_view()),
 ]
 
 

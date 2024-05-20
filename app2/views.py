@@ -367,7 +367,7 @@ class SubmitFeedbackAPIView(APIView):
 
     def get(self, request, listing_id, format=None):
         try:
-            # Assuming Rating model has a field named 'listing_id' to store the listing ID
+           
             ratings = Feedback.objects.filter(listing_id=listing_id).values_list('rating', flat=True)
             ratings_list = list(ratings)
             total_ratings = len(ratings_list)
