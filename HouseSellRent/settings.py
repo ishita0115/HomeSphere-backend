@@ -32,8 +32,6 @@ AUTH_USER_MODEL = 'app1.User'
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
-    # 'socketio',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,8 +48,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'cloudinary_storage',
     'cloudinary',
-    'app3',
-    'channels',
+   
 ]
 
 MIDDLEWARE = [
@@ -208,7 +205,6 @@ ACCOUNT_EMAIL_VERIFICATION = None
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 
 
-# WSGI_APPLICATION = 'app2.wsgi.application'
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': 'daajyumzx',
     'API_KEY': '771122555868975',

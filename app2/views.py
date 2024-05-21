@@ -14,12 +14,12 @@ from .permissions import  IsSellerUser, IsAdminUser
 from .permissions import IsBuyerUser 
 from django.db.models.functions import Coalesce
 from django.db.models import Avg, Value, FloatField
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import PageNumberPagination
 from django.core.mail import send_mail
 
 class ManageListingView(APIView):
     permission_classes = [IsAuthenticated]
-    pagination_class = LimitOffsetPagination
+    pagination_class = PageNumberPagination
     def get(self, request,*args, **kwargs):
         try:
             country = request.GET.get('country', None)
@@ -62,12 +62,9 @@ class ManageListingView(APIView):
                 if max_price:
                     properties = properties.filter(price__lte=max_price)
             paginator = self.pagination_class()
+            paginator.page_size=8
             paginated_properties = paginator.paginate_queryset(properties, request)
-            erializer = ListingSerializer(paginated_properties, many=True)
-
-            # Serialize the properties
-            serializer = ListingSerializer(properties, many=True)
-            
+            serializer = ListingSerializer(paginated_properties, many=True)
             return paginator.get_paginated_response({'data': serializer.data})
         
         except Exception as e:
@@ -308,14 +305,16 @@ class FavoriteAPIView(APIView):
 class myallfavview(APIView):
 
     permission_classes = [IsAuthenticated]
-    pagination_class = LimitOffsetPagination  # Define pagination class
+    pagination_class = PageNumberPagination  # Define pagination class
 
     def get(self, request, user_id, format=None):
         user = get_object_or_404(User, uid=user_id)
         favorite_listings = user.favorites.all()
+    
 
         # Paginate the queryset
         paginator = self.pagination_class()
+        paginator.page_size=8
         paginated_queryset = paginator.paginate_queryset(favorite_listings, request)
 
         # Serialize paginated queryset
@@ -393,6 +392,8 @@ class ListingFeedbackAPIView(APIView):
         
 
 class ListingListView(APIView):
+    pagination_class =  PageNumberPagination
+
     def post(self, request):
         sort_by = request.data.get('sort_by')
         listings = Listing.objects.all()
