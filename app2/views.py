@@ -15,6 +15,7 @@ from .permissions import IsBuyerUser
 from django.db.models.functions import Coalesce
 from django.db.models import Avg, Value, FloatField
 from rest_framework.pagination import LimitOffsetPagination
+from django.core.mail import send_mail
 
 class ManageListingView(APIView):
     permission_classes = [IsAuthenticated]
@@ -415,3 +416,35 @@ class AllTrashHome(APIView):
         trash_data = Listing.objects.filter(is_deleted=True)
         serializer = ListingSerializer(trash_data, many=True)
         return Response(serializer.data)
+
+
+
+class Videocallmailsend(APIView):
+    def post(self, request, uid , userid):
+        link = request.data.get('link')
+        try:
+            user = User.objects.get(uid=uid)
+        except User.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = UserSerializer(user)
+        selleremail = serializer.data.get('email')
+
+        try:
+            buyer = User.objects.get(uid=userid)
+        except User.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = UserSerializer(buyer)
+        Buyeremail = serializer.data.get('email')
+        body = link
+
+        if selleremail:
+            send_mail(
+            'Videocall seller and buyer between',
+            f'link click and call start:---------------->{body}',
+             Buyeremail,
+            [selleremail],
+            fail_silently=False,
+        )
+            return Response({'message': 'Link received and email sent successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid or empty link'}, status=status.HTTP_400_BAD_REQUEST)
