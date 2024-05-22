@@ -11,8 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
 from pathlib import Path
-# from dotenv import load_dotenv
-# load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -48,7 +47,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'cloudinary_storage',
     'cloudinary',
-   
+    'razorpayapp'
 ]
 
 MIDDLEWARE = [
@@ -221,3 +220,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'ishitachovatiya15@gmail.com'
 EMAIL_HOST_PASSWORD = 'bwjl ttly liva dfuo'
+
+
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_key_id")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAT_key_secret")
