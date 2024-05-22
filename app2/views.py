@@ -32,11 +32,12 @@ class ManageListingView(APIView):
             max_price = request.GET.get('max_price', None)
 
             
+
             if not any([country, city, sale_type, bedrooms, home_type, address, min_price, max_price]):
-                properties = Listing.objects.all()
+                properties = Listing.objects.filter(is_deleted=False)
             else:
                 # Filter properties based on provided search parameters
-                properties = Listing.objects.all()
+                properties = Listing.objects.filter(is_deleted=False)
 
                 if country:
                     properties = properties.filter(country__icontains=country)
@@ -96,12 +97,15 @@ class ManageListingView(APIView):
     def put(self, request, pk, format=None):
         try:
             listing = Listing.objects.get(pk=pk)
+            print(listing)
             if request.user != listing.user:
                 return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-            data = request.data.copy()
+            data = request.data
+            print(data)
             serializer = Listingupdateserializer(listing, data=data, partial=True)
             if serializer.is_valid():
-                serializer.save()
+                serializer.save()   
+                print(serializer.data)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Listing.DoesNotExist:
@@ -121,6 +125,21 @@ class ManageListingView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+class ManageRestoreview(APIView):
+     permission_classes = [IsAuthenticated]
+     def put(self, request, pk, format=None):
+        try:
+            listing = Listing.objects.get(pk=pk)
+            if request.user != listing.user:
+                    return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            listing.is_deleted = False  
+            listing.save()
+            return Response({'success': 'Home Successfully Restore'}, status=status.HTTP_204_NO_CONTENT)
+        except Listing.DoesNotExist:
+                return Response({'error': 'Listing does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
+         
 class ListingDelete(APIView):
     permission_classes = [IsAuthenticated]
     def delete(self, request, pk, format=None):
@@ -158,7 +177,7 @@ class ListingDetailView(APIView):
     def get(self, request, pk, format=None):  # Changed the method signature to accept pk
         print(pk)
         try:
-            listing = Listing.objects.get(pk=pk)
+            listing = Listing.objects.get(pk=pk, is_deleted=False)
               # Retrieve the listing using pk
             serializer = ListingSerializer(listing)
             
@@ -172,7 +191,7 @@ class UserListingAPIView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, user_id):
         try:
-            listings = Listing.objects.filter(user_id=user_id)
+            listings = Listing.objects.filter(user_id=user_id, is_deleted=False)
             serializer = ListingSerializer(listings, many=True)
             return Response(serializer.data)
         except Exception as e:
@@ -182,7 +201,8 @@ class myListingAPIView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request ,uid ):
         try:
-            listings = Listing.objects.filter(user__uid=uid)
+
+            listings = Listing.objects.filter(user__uid=uid, is_deleted=False)
             serializer = ListingSerializer(listings, many=True)
             return Response(serializer.data)
         except Exception as e:
@@ -396,7 +416,7 @@ class ListingListView(APIView):
 
     def post(self, request):
         sort_by = request.data.get('sort_by')
-        listings = Listing.objects.all()
+        listings = Listing.objects.filter(is_deleted=False)
         if sort_by:
             if sort_by == 'price_asc':
                 listings = listings.order_by('price')

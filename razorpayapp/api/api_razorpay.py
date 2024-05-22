@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework import status
 
+from app1.models import User
 from razorpayapp.models import Transaction
-from .razorpay_serializers import RazorpayOrderSerializer, TranscationModelSerializer
+from .razorpay_serializers import Allsbscibruserserializer, RazorpayOrderSerializer, TranscationModelSerializer
 from razorpayapp.api.razorpay.main import RazorpayClient
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -78,3 +79,17 @@ class PaymentStatusView(APIView):
         
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class Allsubscribeuser(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, format=None):
+        user_ids = Transaction.objects.values_list('user_id', flat=True).distinct()
+        
+        # Return the list of distinct user IDs
+        users = User.objects.filter(id__in=user_ids)
+        
+        # Serialize user data if needed
+        user_data = [{"id": user.id, "Firstname": user.first_name,'lastname':user.last_name,'email':user.email} for user in users]
+        
+        # Return the user data as response
+        return Response(user_data, status=status.HTTP_200_OK)

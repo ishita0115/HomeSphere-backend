@@ -1,5 +1,5 @@
 from django.urls import path
-from .api_razorpay import PaymentStatusView, RazorpayOrderAPIView, TransactionAPIView
+from .api_razorpay import Allsubscribeuser, PaymentStatusView, RazorpayOrderAPIView, TransactionAPIView
 
 urlpatterns = [
     path("order/create/", 
@@ -11,4 +11,5 @@ urlpatterns = [
         name="razorpay-complete-order-api"
     ),
     path('payment-status/<str:uid>/', PaymentStatusView.as_view()),
+    path('usersallsubscibe/', Allsubscribeuser.as_view()),
 ]
